@@ -16,23 +16,25 @@
 
                         <b-form-group label="Contraseña:" label-for="password">
                             <b-form-input
-                                id="password"
-                                v-model="password"
-                                type="password"
-                                placeholder ="Contraseña"
-                                required
+                            id="password"
+                            v-model="password"
+                            type="password"
+                            placeholder ="Contraseña"
+                            required
                             ></b-form-input>
                         </b-form-group>
 
+                        <b-alert
+                            v-model="error"
+                            variant="danger"
+                            class="mt-3"
+                            dismissible
+                            @dismissed="!error"
+                        >
+                            {{ msgError }}
+                        </b-alert>
                         <b-button type="submit" variant="primary" block>Entrar</b-button>
                     </b-form>
-
-                <!-- <b-alert
-                    v-if="error"
-                    variant="danger"
-                    dismissible
-                    class="mt-3"
-                >{{ error }}</b-alert> -->
                 </b-card>
             </b-col>
         </b-row>
@@ -46,47 +48,44 @@ export default {
         return {
             userName: '',
             password: '',
-            error: null
+            error: false,
+            msgError: '',
+            basePath: 'http://localhost:9000/public/'
         };
     },
     methods: {
-        handleLogin() {
-            console.log(this.userName, this.password);
-            
-            if (this.userName === 'admin' && this.password === '123') {
-                localStorage.setItem('auth', true);
-                this.$router.push('/home');
-            } else {
-                alert('Credenciales incorrectas');
-            }
-        },
-
         async login(){
             try {
-                console.log('Attempting to log in with:', this.user);
+                //!console.log('Attempting to log in with:', this.userName);
+                this.error = null;
                 
-                const response = await this.$axios.get('http://localhost:8000/models/login.php', {
+                const response = await this.$axios.post(this.basePath + 'auth.php', {
                     user: this.userName,
                     password: this.password
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 });
 
                 if (response.data.success) {
-                    localStorage.setItem('auth', true);
+                    localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+                    
                     this.$router.push('/home');
                 } else {
-                    this.error = 'Credenciales incorrectas';
+                    this.error = true;
+                    this.msgError = response.data.message || 'Usuario o contraseña incorrectos';
                 }
             } catch (error) {
+                this.error = true;
+                this.msgError = error.response?.data?.message || 'Error al iniciar sesión';
                 console.error(error);
             }
         }
-        
-
     },
 
     mounted() {
-        console.log('Login component mounted');
-        
+        // console.log('Login component mounted');        
     }
 }
 </script>
